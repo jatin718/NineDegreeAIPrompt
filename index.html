@@ -1,0 +1,1205 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>ND Model Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Albert+Sans:wght@300;400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: ND 12-col logic. Red 9-degree "aspect" hero, then a two-column workbench: brief on the left, ranked models + prompt on the right. */
+:root{
+  color-scheme:light;
+  --red:#E33D25;
+  --red-ink:#C42F19;
+  --on-red:#FFFFFF;
+  --paper:#FFFFFF;
+  --stone:#ECE8E7;
+  --stone-2:#E2DDDB;
+  --ink:#141213;
+  --grey:#636466;
+  --line:#D8D2D0;
+  --field:#FFFFFF;
+  --code:#F6F3F2;
+  --ok:#2E7A4E;
+  --ok-bg:#E5F1EA;
+  --warn:#9A6212;
+  --warn-bg:#FBF0DD;
+  --shadow:0 1px 0 rgba(20,18,19,.04), 0 8px 24px -16px rgba(20,18,19,.25);
+  --f-display:"Albert Sans", "Elza", "Helvetica Neue", Arial, sans-serif;
+  --f-body:"Albert Sans", "Elza", "Helvetica Neue", Arial, sans-serif;
+  --f-mono:"IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --slant:9deg;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --red:#EF4B32; --red-ink:#FF7A63; --on-red:#FFFFFF;
+    --paper:#141112; --stone:#1C1819; --stone-2:#262122; --ink:#F3EFEE; --grey:#A7A1A0;
+    --line:#352E2E; --field:#1A1617; --code:#100E0F;
+    --ok:#6BC796; --ok-bg:#16291F; --warn:#E9B45F; --warn-bg:#2C2112;
+    --shadow:0 1px 0 rgba(0,0,0,.3), 0 8px 24px -16px rgba(0,0,0,.8);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --red:#EF4B32; --red-ink:#FF7A63; --on-red:#FFFFFF;
+  --paper:#141112; --stone:#1C1819; --stone-2:#262122; --ink:#F3EFEE; --grey:#A7A1A0;
+  --line:#352E2E; --field:#1A1617; --code:#100E0F;
+  --ok:#6BC796; --ok-bg:#16291F; --warn:#E9B45F; --warn-bg:#2C2112;
+  --shadow:0 1px 0 rgba(0,0,0,.3), 0 8px 24px -16px rgba(0,0,0,.8);
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{margin:0}
+[hidden]{display:none!important}
+img{max-width:100%}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html,body{background:var(--paper)}
+body{color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--red);outline-offset:2px}
+.wrap{max-width:1440px;margin:0 auto;padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+@media (min-width:900px){.wrap{padding-left:max(40px, env(safe-area-inset-left, 0px));padding-right:max(40px, env(safe-area-inset-right, 0px))}}
+.mono{font-family:var(--f-mono)}
+.num{font-variant-numeric:tabular-nums}
+.eyebrow{font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;font-weight:600;color:var(--grey)}
+h1,h2,h3{text-wrap:balance;margin:0}
+
+/* Top bar */
+.topbar{border-bottom:1px solid var(--line);background:var(--paper);position:sticky;top:env(safe-area-inset-top, 0px);z-index:20}
+.topbar .wrap{display:flex;align-items:center;gap:16px;padding-block:14px;flex-wrap:wrap}
+.wordmark{font-family:var(--f-display);color:var(--red);font-size:22px;letter-spacing:-.01em;line-height:1;white-space:nowrap}
+.wordmark b{font-weight:800}.wordmark span{font-weight:300}
+.product{display:flex;align-items:center;gap:10px;padding-left:14px;border-left:1px solid var(--line)}
+.product strong{font-weight:600;font-size:15px}
+.tag{font-size:11px;letter-spacing:.08em;text-transform:uppercase;border:1px solid var(--line);padding:3px 8px;color:var(--grey);white-space:nowrap}
+.topbar .spacer{flex:1}
+.ai-state{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--grey)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--line);flex:none}
+.dot.on{background:var(--ok)}.dot.off{background:var(--warn)}
+
+/* Hero */
+.hero{background:var(--stone);border-bottom:1px solid var(--line)}
+.hero .wrap{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:0;align-items:stretch}
+.hero-red{background:var(--red);color:var(--on-red);padding:36px 72px 36px 36px;clip-path:polygon(0 0,100% 0,calc(100% - 46px) 100%,0 100%);margin-left:calc(-1 * max(16px, env(safe-area-inset-left, 0px)))}
+@media (min-width:900px){.hero-red{margin-left:calc(-1 * max(40px, env(safe-area-inset-left, 0px)));padding-left:max(40px, env(safe-area-inset-left, 0px))}}
+.hero-red h1{font-family:var(--f-display);font-weight:300;font-size:clamp(30px,4.2vw,54px);line-height:1.02;letter-spacing:-.02em}
+.hero-red h1 b{font-weight:600}
+.hero-red p{margin:16px 0 0;max-width:46ch;font-size:15.5px;opacity:.95}
+.hero-side{padding:28px 0 28px 36px;display:flex;flex-direction:column;justify-content:center;gap:18px}
+.steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.step{border-top:2px solid var(--ink);padding-top:10px}
+.step .n{font-family:var(--f-mono);font-size:12px;color:var(--red-ink)}
+.step b{display:block;font-weight:600;margin-top:2px}
+.step span{font-size:13px;color:var(--grey);display:block;margin-top:2px}
+.stats{display:flex;gap:22px;flex-wrap:wrap;font-size:13px;color:var(--grey)}
+.stats b{color:var(--ink);font-weight:600;font-size:20px;display:block;line-height:1.1}
+@media (max-width:860px){
+  .hero .wrap{grid-template-columns:1fr}
+  .hero-red{clip-path:polygon(0 0,100% 0,100% calc(100% - 22px),0 100%);padding:28px 24px 44px max(16px, env(safe-area-inset-left, 0px));margin-right:calc(-1 * max(16px, env(safe-area-inset-right, 0px)))}
+  .hero-side{padding:8px 0 24px}
+}
+@media (max-width:520px){.steps{grid-template-columns:1fr}}
+
+/* Mode switch */
+.modebar .wrap{display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap;padding-block:22px 0}
+.modes{display:flex;gap:6px}
+.mode{border:0;background:var(--stone);padding:11px 26px 11px 20px;font-weight:600;font-size:15px;cursor:pointer;clip-path:polygon(0 0,100% 0,calc(100% - 8px) 100%,0 100%);color:var(--grey)}
+.mode[aria-selected="true"]{background:var(--ink);color:var(--paper)}
+.mode:hover:not([aria-selected="true"]){color:var(--ink)}
+.modebar .hint{color:var(--grey);font-size:13.5px;padding-bottom:10px}
+
+/* Workbench */
+.bench{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:24px;padding-block:20px 56px;align-items:start}
+@media (max-width:980px){.bench{grid-template-columns:1fr}}
+.panel{border:1px solid var(--line);background:var(--paper);min-width:0}
+.panel-h{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.panel-h h2{font-size:16px;font-weight:600;letter-spacing:-.005em}
+.panel-h .sp{flex:1}
+.section{padding:18px;border-bottom:1px solid var(--line);display:grid;gap:12px}
+.section:last-child{border-bottom:0}
+label.lbl,.lbl{font-size:12.5px;font-weight:600;color:var(--ink);display:flex;align-items:center;gap:8px}
+.lbl small{font-weight:400;color:var(--grey)}
+.pill-ex{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;background:var(--warn-bg);color:var(--warn);padding:2px 7px;font-weight:600}
+textarea,input[type=text],select{width:100%;background:var(--field);border:1px solid var(--line);padding:10px 12px;border-radius:0;outline:none}
+textarea{min-height:128px;resize:vertical;line-height:1.5}
+textarea:focus,input[type=text]:focus,select:focus{border-color:var(--ink)}
+select{appearance:none;-webkit-appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--grey) 50%),linear-gradient(135deg,var(--grey) 50%,transparent 50%);background-position:calc(100% - 16px) 52%,calc(100% - 11px) 52%;background-size:5px 5px;background-repeat:no-repeat;padding-right:30px}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.grid2 > div{display:grid;gap:6px;min-width:0}
+@media (max-width:440px){.grid2{grid-template-columns:1fr}}
+.linkbtn{background:none;border:0;padding:0;color:var(--grey);font-size:12.5px;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+.linkbtn:hover{color:var(--red-ink)}
+.counter{font-size:12px;color:var(--grey);margin-left:auto}
+
+/* Segmented chips */
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line);background:var(--field);padding:6px 11px;font-size:13px;cursor:pointer;line-height:1.3}
+.chip:hover{border-color:var(--grey)}
+.chip[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--paper)}
+.chip.multi[aria-pressed="true"]{background:var(--red);border-color:var(--red);color:var(--on-red)}
+
+/* Range */
+input[type=range]{width:100%;accent-color:var(--red)}
+.range-row{display:flex;align-items:center;gap:14px}
+.range-row output{font-family:var(--f-mono);font-size:14px;min-width:3.5ch;text-align:right}
+
+/* Dropzone */
+.drop{border:1.5px dashed var(--line);background:var(--stone);padding:18px;text-align:center;cursor:pointer;display:grid;gap:4px;place-items:center}
+.drop.over{border-color:var(--red);background:var(--stone-2)}
+.drop b{font-weight:600}
+.drop span{font-size:12.5px;color:var(--grey)}
+.refs{display:grid;gap:8px}
+.ref{display:grid;grid-template-columns:64px minmax(0,1fr) auto;gap:10px;align-items:center;border:1px solid var(--line);padding:6px}
+.ref .thumb{width:64px;height:48px;background:var(--stone-2);object-fit:cover;display:block}
+.ref .meta{min-width:0;display:grid;gap:4px}
+.ref .meta .nm{font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ref .meta .nm b{font-family:var(--f-mono);font-weight:500;color:var(--red-ink);margin-right:6px}
+.ref select{padding:5px 28px 5px 8px;font-size:12.5px}
+.xbtn{border:0;background:none;color:var(--grey);cursor:pointer;font-size:18px;line-height:1;padding:4px 8px}
+.xbtn:hover{color:var(--red-ink)}
+
+/* Buttons */
+.actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.btn{border:0;cursor:pointer;font-weight:600;font-size:14.5px;padding:12px 30px 12px 18px;clip-path:polygon(0 0,100% 0,calc(100% - 10px) 100%,0 100%);display:inline-flex;align-items:center;gap:8px;white-space:nowrap}
+.btn-red{background:var(--red);color:var(--on-red)}
+.btn-red:hover{background:var(--red-ink)}
+.btn-ink{background:var(--ink);color:var(--paper)}
+.btn-ghost{background:var(--stone);color:var(--ink)}
+.btn-ghost:hover{background:var(--stone-2)}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+.btn-sm{font-size:13px;padding:8px 22px 8px 12px}
+.textcta{background:none;border:0;padding:0;font-weight:700;font-size:13.5px;color:var(--red-ink);cursor:pointer;display:inline-flex;gap:6px;align-items:center}
+.textcta:hover{text-decoration:underline;text-underline-offset:3px}
+
+/* Results tabs */
+.tabs{display:flex;gap:0;border-bottom:1px solid var(--line);overflow-x:auto}
+.tab{border:0;background:none;padding:14px 18px;font-weight:600;font-size:14.5px;cursor:pointer;color:var(--grey);border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap}
+.tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--red)}
+.tab .count{font-family:var(--f-mono);font-weight:400;font-size:12px;margin-left:6px;color:var(--grey)}
+.tabpanel{padding:18px;display:grid;gap:14px}
+
+/* Model cards */
+.mlist{display:grid;gap:10px}
+.mcard{border:1px solid var(--line);background:var(--paper);display:grid;grid-template-columns:auto minmax(0,1fr);gap:0 14px;padding:14px 16px}
+.mcard.top{border-color:var(--ink);box-shadow:var(--shadow)}
+.rank{font-family:var(--f-mono);font-size:12px;color:var(--grey);width:24px;padding-top:3px}
+.mcard.top .rank{color:var(--red-ink);font-weight:500}
+.mhead{display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap}
+.mono-tile{width:38px;height:38px;flex:none;display:grid;place-items:center;font-weight:700;font-size:13px;background:var(--stone);color:var(--ink);clip-path:polygon(0 0,100% 0,calc(100% - 6px) 100%,0 100%)}
+.mcard.top .mono-tile{background:var(--red);color:var(--on-red)}
+.mname{min-width:0;flex:1}
+.mname h3{font-size:16.5px;font-weight:600;letter-spacing:-.005em;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.mname .maker{font-size:12.5px;color:var(--grey)}
+.status{font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;font-weight:600;padding:2px 6px;border:1px solid var(--line);color:var(--grey)}
+.status.preview{background:var(--warn-bg);border-color:transparent;color:var(--warn)}
+.status.early{background:var(--stone-2);border-color:transparent;color:var(--grey)}
+.status.pick{background:var(--red);border-color:transparent;color:var(--on-red)}
+.fit{min-width:120px;display:grid;gap:4px;justify-items:end}
+.fit b{font-family:var(--f-mono);font-size:20px;font-weight:500;line-height:1}
+.fit b small{font-size:12px;color:var(--grey);font-weight:400}
+.bar{width:120px;height:4px;background:var(--stone-2)}
+.bar i{display:block;height:100%;background:var(--red)}
+.specs{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.spec{font-family:var(--f-mono);font-size:11.5px;background:var(--stone);padding:3px 7px;color:var(--ink)}
+.why{margin-top:10px;display:flex;flex-wrap:wrap;gap:6px}
+.r{font-size:12.5px;padding:3px 8px;display:inline-flex;gap:6px;align-items:center}
+.r.ok{background:var(--ok-bg);color:var(--ok)}
+.r.warn{background:var(--warn-bg);color:var(--warn)}
+.r::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;flex:none}
+.ai-why{margin-top:10px;font-size:13.5px;border-left:2px solid var(--red);padding:2px 0 2px 10px}
+.ai-why b{font-weight:600}
+.mbody{grid-column:2;min-width:0}
+.mfoot{display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin-top:12px}
+.details{margin-top:12px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;font-size:13.5px}
+.details > div{min-width:0}
+.details .k{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--grey);font-weight:600;margin-bottom:3px}
+.details ul{margin:0;padding-left:18px}
+@media (max-width:560px){.details{grid-template-columns:1fr}.fit{justify-items:start;min-width:0;width:100%}.bar{width:100%}}
+
+/* Prompt output */
+.empty{border:1px dashed var(--line);padding:28px;text-align:center;color:var(--grey);display:grid;gap:10px;justify-items:center}
+.empty b{color:var(--ink);font-weight:600;font-size:15.5px}
+.out-head{display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap}
+.out-head .t{flex:1;min-width:0}
+.out-head h3{font-size:20px;font-weight:300;letter-spacing:-.01em}
+.out-head h3 b{font-weight:600}
+.out-head .sub{font-size:13px;color:var(--grey);margin-top:2px}
+.codebox{background:var(--code);border:1px solid var(--line);position:relative}
+.codebox .cb-h{display:flex;align-items:center;gap:10px;padding:8px 10px 8px 14px;border-bottom:1px solid var(--line)}
+.codebox .cb-h .sp{flex:1}
+.codebox pre{margin:0;padding:14px;font-family:var(--f-mono);font-size:13px;line-height:1.6;white-space:pre-wrap;word-break:break-word;max-height:460px;overflow:auto}
+.copy{border:1px solid var(--line);background:var(--paper);padding:5px 10px;font-size:12.5px;font-weight:600;cursor:pointer}
+.copy:hover{border-color:var(--ink)}
+.copy.done{background:var(--ok-bg);color:var(--ok);border-color:transparent}
+.bd{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line)}
+.bd > div{background:var(--paper);padding:12px 14px;min-width:0}
+.bd .k{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--grey);font-weight:600;margin-bottom:4px}
+.bd .v{font-size:13.5px}
+.bd .full{grid-column:1 / -1}
+@media (max-width:560px){.bd{grid-template-columns:1fr}}
+.cam{display:grid;grid-template-columns:auto minmax(0,1fr);gap:3px 12px;font-size:13.5px}
+.cam dt{color:var(--grey)}
+.cam dd{margin:0}
+.timeline{display:grid;gap:0;border:1px solid var(--line)}
+.beat{display:grid;grid-template-columns:86px minmax(0,1fr);border-bottom:1px solid var(--line)}
+.beat:last-child{border-bottom:0}
+.beat .tc{font-family:var(--f-mono);font-size:12.5px;padding:10px 12px;background:var(--stone);color:var(--red-ink)}
+.beat .tx{padding:10px 12px;font-size:13.5px}
+.refmap{width:100%;border-collapse:collapse;font-size:13.5px}
+.refmap td{padding:8px 10px;border-top:1px solid var(--line);vertical-align:top}
+.refmap td:first-child{font-family:var(--f-mono);font-size:12.5px;color:var(--red-ink);white-space:nowrap;width:1%}
+.tips{margin:0;padding-left:18px;display:grid;gap:4px;font-size:13.5px}
+.refine{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px}
+@media (max-width:480px){.refine{grid-template-columns:1fr}}
+.busy{display:flex;gap:12px;align-items:center;padding:14px 16px;border:1px solid var(--line);background:var(--stone)}
+.busy .spin{width:14px;height:14px;border:2px solid var(--line);border-top-color:var(--red);border-radius:50%;animation:spin .8s linear infinite;flex:none}
+.busy .msg{flex:1;font-size:13.5px}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion: reduce){.busy .spin{animation:none}}
+.note{font-size:13px;color:var(--grey)}
+.alert{padding:10px 12px;background:var(--warn-bg);color:var(--warn);font-size:13.5px}
+.srcnote{font-size:12px;color:var(--grey);border-top:1px solid var(--line);padding-top:12px}
+
+/* History */
+.hist{display:grid;gap:8px}
+.hrow{border:1px solid var(--line);padding:12px 14px;display:grid;gap:6px}
+.hrow .top{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.hrow .top b{font-weight:600}
+.hrow .top .sp{flex:1}
+.hrow p{margin:0;font-size:13px;color:var(--grey);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+
+footer{border-top:1px solid var(--line)}
+footer .wrap{padding-block:18px;display:flex;gap:16px;flex-wrap:wrap;font-size:12.5px;color:var(--grey)}
+footer .wordmark{font-size:15px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+</style>
+</head>
+<body>
+
+
+<header class="topbar">
+  <div class="wrap">
+    <div class="wordmark" aria-label="Nine Degree"><b>NINE</b><span>DEGREE</span></div>
+    <div class="product"><strong>Model Lab</strong><span class="tag">Internal · Creative team</span></div>
+    <div class="spacer"></div>
+    <div class="ai-state" id="aiState"><span class="dot" id="aiDot"></span><span id="aiText">Connecting prompt engine…</span></div>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="wrap">
+    <div class="hero-red">
+      <h1>Pick the right model.<br><b>Write the perfect prompt.</b></h1>
+      <p>Brief the shot, drop your reference images or video, and get a ranked model pick plus a paste-ready prompt with camera, lens, lighting, composition and timing spelled out.</p>
+    </div>
+    <div class="hero-side">
+      <div class="steps">
+        <div class="step"><span class="n">01</span><b>Brief</b><span>What you need, plus references</span></div>
+        <div class="step"><span class="n">02</span><b>Evaluate</b><span>Models ranked for this job</span></div>
+        <div class="step"><span class="n">03</span><b>Prompt</b><span>Written for the chosen model</span></div>
+      </div>
+      <div class="stats num">
+        <div><b id="statV">9</b>video models</div>
+        <div><b id="statI">7</b>image models</div>
+        <div><b>Oct 2026</b>model data</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="modebar">
+  <div class="wrap">
+    <div class="modes" role="tablist" aria-label="Output type">
+      <button class="mode" role="tab" id="modeVideo" data-mode="video" aria-selected="true">Video</button>
+      <button class="mode" role="tab" id="modeImage" data-mode="image" aria-selected="false">Image</button>
+    </div>
+    <div class="hint" id="modeHint">Ranking updates live as you change the brief and settings.</div>
+  </div>
+</section>
+
+<main class="wrap bench">
+  <!-- LEFT: Brief -->
+  <section class="panel" aria-labelledby="briefH">
+    <div class="panel-h"><h2 id="briefH">Brief</h2><span class="sp"></span><button class="linkbtn" id="resetBtn" type="button">Reset all</button></div>
+
+    <div class="section">
+      <label class="lbl" for="brief">What do you want to create? <span class="pill-ex" id="exPill">Example</span><span class="counter num" id="briefCount">0</span></label>
+      <textarea id="brief" maxlength="4000"></textarea>
+      <div class="row"><button class="linkbtn" id="clearBrief" type="button">Clear brief</button></div>
+    </div>
+
+    <div class="section">
+      <div class="lbl">References <small>optional · images and video · up to 12</small></div>
+      <div class="drop" id="drop" tabindex="0" role="button" aria-label="Add reference images or video">
+        <b>Drop images or video here, or click to browse</b>
+        <span>JPG, PNG, WebP · MP4, MOV, WebM. Video is read as key frames. You can also paste an image.</span>
+      </div>
+      <input type="file" id="fileIn" accept="image/*,video/*" multiple hidden>
+      <div class="refs" id="refs"></div>
+    </div>
+
+    <div class="section" id="settingsSec"></div>
+
+    <div class="section">
+      <div class="lbl">Direction <small>Auto lets the engine decide from your brief and references</small></div>
+      <div class="grid2" id="dirGrid"></div>
+    </div>
+
+    <div class="section">
+      <div class="actions">
+        <button class="btn btn-red" id="goBtn" type="button">Evaluate &amp; write prompt</button>
+        <button class="btn btn-ghost" id="tplBtn" type="button">Quick template</button>
+      </div>
+      <div class="note" id="goNote">Uses Claude on your own account to read the references and write the prompt. Quick template builds one instantly from your selections, without reading references.</div>
+    </div>
+  </section>
+
+  <!-- RIGHT: Results -->
+  <section class="panel" aria-label="Results">
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" id="tabRank" data-tab="rank" aria-selected="true">Model ranking <span class="count num" id="rankCount"></span></button>
+      <button class="tab" role="tab" id="tabPrompt" data-tab="prompt" aria-selected="false">Prompt</button>
+      <button class="tab" role="tab" id="tabHist" data-tab="hist" aria-selected="false">History <span class="count num" id="histCount"></span></button>
+    </div>
+    <div class="tabpanel" id="pRank"></div>
+    <div class="tabpanel" id="pPrompt" hidden></div>
+    <div class="tabpanel" id="pHist" hidden></div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span class="wordmark"><b>NINE</b><span>DEGREE</span></span>
+    <span>Model Lab · for the in-house video and design team</span>
+    <span>Model specs compiled October 2026 from vendor and benchmark pages. Check the platform before a big render, specs move fast.</span>
+  </div>
+</footer>
+
+<script>
+(function(){
+"use strict";
+const $=s=>document.querySelector(s);
+const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+
+/* ---------------- Model catalog ---------------- */
+const VIDEO=[
+ {id:"seedance25",name:"Seedance 2.5",maker:"ByteDance",mono:"S2.5",status:"ga",res:1080,resLabel:"1080p",dur:[4,30],audio:2,audioLabel:"Native audio (optional)",
+  refs:{img:30,vid:true,startEnd:true,aud:true},refsLabel:"Up to 30 images · 1 video · audio · start/end frame",cost:2,speed:2,
+  s:{realism:5,motion:5,camera:4,consistency:5,multishot:4,arch:4,people:5,text:3},
+  best:"Long single takes up to 30s, reference-locked characters and sets, brand films that must hold identity across the whole clip.",
+  watch:"No 4K output. 1080p costs several times the 480p rate, so draft at 480p and finalise at 1080p.",
+  style:"seedance",
+  tips:["Open with an image map: which @Image is the first frame, which is the face, which is wardrobe or environment.","Write the action as timed beats ([0-4s], [4-9s]) with one camera idea per beat.","Draft at 480p, lock the take, then render the 1080p final."]},
+ {id:"seedance20",name:"Seedance 2.0",maker:"ByteDance",mono:"S2",status:"ga",res:2160,resLabel:"4K",dur:[4,15],audio:2,audioLabel:"Native audio + lip sync",
+  refs:{img:9,vid:true,startEnd:true,aud:true},refsLabel:"Up to 9 images · 3 videos · 3 audio · start/end frame",cost:3,speed:3,
+  s:{realism:5,motion:5,camera:4,consistency:4,multishot:4,arch:4,people:5,text:3},
+  best:"Realistic candid people, lifestyle moments in homes, image-map workflows (first frame + face + wardrobe). The team's proven realism workhorse.",
+  watch:"15s ceiling per generation. Strict content filters on faces of real people; use generated characters.",
+  style:"seedance",
+  tips:["Use the image map: @Image1 = exact first frame and grade, @Image2 = face, @Image3 = body/wardrobe.","For realism, write camera imperfections: loose handheld, late reframes, slight tilt left unfixed.","Name the effects layer: phone-lens rendering, step-bounce, parallax drift."]},
+ {id:"kling3omni",name:"Kling 3.0 Omni",maker:"Kuaishou",mono:"KO",status:"ga",res:2160,resLabel:"4K",dur:[3,15],audio:2,audioLabel:"Native audio + voice binding",
+  refs:{img:7,vid:true,startEnd:true,aud:true},refsLabel:"Up to 7 elements (4 with video) · 3-10s video ref · voice sample",cost:3,speed:3,
+  s:{realism:4,motion:5,camera:5,consistency:5,multishot:5,arch:4,people:5,text:2,},
+  best:"Multi-shot sequences with the same character and voice across shots, multiple characters in one scene, reference-faithful image-to-video.",
+  watch:"Native audio switches off when you add a video reference, so add sound in post. Video-reference runs cost more credits.",
+  style:"kling",
+  tips:["Label shots: Shot 1 (0-5s), Shot 2 (5-10s) with a camera move for each.","Refer to references as [Element 1], [Element 2] and say what each one locks.","Bind a 5-30s voice sample for a speaking character."]},
+ {id:"kling3",name:"Kling 3.0",maker:"Kuaishou",mono:"K3",status:"ga",res:1080,resLabel:"1080p",dur:[3,15],audio:1,audioLabel:"Native audio (basic)",
+  refs:{img:2,vid:false,startEnd:true,aud:false},refsLabel:"Start + end frame · still image input",cost:4,speed:4,
+  s:{realism:4,motion:5,camera:5,consistency:3,multishot:4,arch:4,people:4,text:2},
+  best:"Cinematic camera moves and strong physics from text or a single still. Drone push-ins, orbits around a tower, slow dolly through interiors.",
+  watch:"No video reference. Weaker at holding multiple reference images. Audio is basic.",
+  style:"kling",
+  tips:["One flowing paragraph: shot, subject, action, environment, camera move, lighting, style.","Pacing words matter: slowly, steadily, gently accelerating.","Use start + end frame to force an exact reveal (exterior to balcony, day to dusk)."]},
+ {id:"minimaxh3",name:"MiniMax H3",maker:"MiniMax (Hailuo 3)",mono:"H3",status:"ga",res:1440,resLabel:"2K",dur:[5,15],audio:2,audioLabel:"Native audio",
+  refs:{img:1,vid:false,startEnd:false,aud:false},refsLabel:"Image-to-video from a still",cost:3,speed:3,
+  s:{realism:5,motion:5,camera:4,consistency:4,multishot:3,arch:4,people:5,text:2},
+  best:"Animating a finished key visual or render. Ranked #1 for image-to-video on LMArena in Sept 2026. Open weights.",
+  watch:"Single image input. Pricier per minute than older Hailuo versions.",
+  style:"minimax",
+  tips:["Start from your best still; describe only what moves.","Bracketed camera commands help: [Push in], [Truck left], [Pedestal up], [Static shot].","Keep one main action per clip."]},
+ {id:"veo31",name:"Veo 3.1",maker:"Google",mono:"V3",status:"preview",res:1080,resLabel:"1080p (4K some routes)",dur:[4,8],audio:3,audioLabel:"Best-in-class dialogue + SFX",
+  refs:{img:3,vid:false,startEnd:true,aud:false},refsLabel:"Up to 3 reference images · start/end frame",cost:2,speed:3,
+  s:{realism:5,motion:4,camera:4,consistency:4,multishot:2,arch:4,people:5,text:3},
+  best:"Short talking moments: a buyer reacting, an agent line, a family conversation with synced lips and ambient sound.",
+  watch:"4, 6 or 8 second clips only. Expensive per second. Plan longer pieces as several shots.",
+  style:"veo",
+  tips:["Dialogue in quotes with a speaker: The woman says: \"...\"","Add an Audio line for ambience and SFX.","One beat per clip; stitch in the edit."]},
+ {id:"geminiomni",name:"Gemini Omni Flash 1.1",maker:"Google",mono:"GO",status:"preview",res:2160,resLabel:"4K",dur:[3,10],audio:2,audioLabel:"Native audio",
+  refs:{img:6,vid:true,startEnd:true,aud:true},refsLabel:"Text, image, audio and video inputs",cost:3,speed:4,
+  s:{realism:4,motion:4,camera:4,consistency:4,multishot:3,arch:4,people:4,text:4},
+  best:"Iterating by conversation: generate, then ask for edits (swap the sky, slow the move). Handles mixed inputs in one brief.",
+  watch:"Preview model. 10s ceiling.",
+  style:"omni",
+  tips:["Write it like a director's brief, then refine with short edit instructions.","Reference inputs by order: the first image, the video clip.","Ask for one change at a time when editing."]},
+ {id:"wan30",name:"Wan 3.0",maker:"Alibaba",mono:"W3",status:"ga",res:1080,resLabel:"1080p",dur:[2,30],audio:2,audioLabel:"Multilingual voice",
+  refs:{img:8,vid:true,startEnd:false,aud:true},refsLabel:"Images, video, audio · PDF and slides to video",cost:5,speed:3,
+  s:{realism:4,motion:4,camera:3,consistency:4,multishot:4,arch:3,people:4,text:4},
+  best:"Budget long-form: 30s explainers, turning a brochure PDF or deck into a video, multilingual VO.",
+  watch:"Not independently benchmarked yet. Access is still rolling out by region.",
+  style:"wan",
+  tips:["Give a structured timeline with timestamps up to 30s.","Name the voice language and tone (Hindi, warm, conversational).","For doc-to-video, attach the PDF and say which pages drive each beat."]},
+ {id:"flux3",name:"FLUX 3 Video",maker:"Black Forest Labs",mono:"F3",status:"early",res:1080,resLabel:"1080p",dur:[5,20],audio:2,audioLabel:"Native audio + lip sync",
+  refs:{img:4,vid:true,startEnd:true,aud:false},refsLabel:"Keyframes · video-to-video character carry",cost:3,speed:3,
+  s:{realism:4,motion:4,camera:4,consistency:4,multishot:4,arch:3,people:4,text:3},
+  best:"Carrying a character from one clip into a new scene, keyframe-to-video, chained multi-shot sequences.",
+  watch:"Early access only. No public price or API yet. Vendor benchmarks only.",
+  style:"flux",
+  tips:["List keyframes in order and what changes between them.","Dialogue in quotes for lip sync.","Keep scenes simple until the model is generally available."]}
+];
+const IMAGE=[
+ {id:"gptimage2",name:"GPT Image 2",maker:"OpenAI",mono:"G2",status:"ga",res:4096,resLabel:"4K",
+  refsLabel:"Multi-image input · natural language edits",refs:{img:10},cost:3,speed:2,
+  s:{photoreal:4,render:4,text:5,consistency:4,edit:5,style:3},
+  best:"Ad creatives with headline, price and CTA baked in. Brochure spreads, OOH mockups, Hindi + English typography, layout-heavy designs.",
+  watch:"Slowest of the set. Fine detail on objects can soften. Can drift from an exact colour scheme, so give hex codes.",
+  style:"gpt",
+  tips:["Brief it like a layout: canvas, zones, then each text line in quotes with weight, size and position.","Give brand colours as hex.","Ask for a clean safe area where copy will sit."]},
+ {id:"nanobananapro",name:"Nano Banana Pro",maker:"Google",mono:"NP",status:"ga",res:4096,resLabel:"4K",
+  refsLabel:"Multi-reference · precise edits",refs:{img:14},cost:2,speed:3,
+  s:{photoreal:5,render:5,text:4,consistency:5,edit:5,style:3},
+  best:"Editing real project photos and renders: swap the sky, stage an empty flat, add people, change season, keep the building exact.",
+  watch:"Highest cost per image in this set.",
+  style:"banana",
+  tips:["Edits: \"Using Image 1, change X. Keep the facade, windows and balconies exactly the same.\"","Name what must not move.","Stack references: Image 1 building, Image 2 lighting mood."]},
+ {id:"nanobanana2",name:"Nano Banana 2",maker:"Google",mono:"N2",status:"ga",res:2048,resLabel:"2K (4K option)",
+  refsLabel:"Multi-reference · up to 5 consistent characters",refs:{img:10},cost:5,speed:5,
+  s:{photoreal:4,render:4,text:3,consistency:4,edit:4,style:3},
+  best:"Fast variations, storyboards, social carousels, quick concept rounds before a final in Pro.",
+  watch:"Small text can wave or misspell. Fix copy in design or move to GPT Image 2.",
+  style:"banana",
+  tips:["Great for 10 quick options; pick, then finalise in Pro.","Keep any on-image text to one short line.","Use it to build Seedance first frames."]},
+ {id:"seedream5",name:"Seedream 5.0 Pro",maker:"ByteDance",mono:"SD",status:"ga",res:4096,resLabel:"4K",
+  refsLabel:"Universal reference consistency",refs:{img:10},cost:5,speed:4,
+  s:{photoreal:4,render:4,text:2,consistency:5,edit:4,style:3},
+  best:"Consistent series (same building or character across many frames) at low cost. Factual scenes and storyboards.",
+  watch:"Weakest text rendering here. Colour can look flat; push the grade in the prompt.",
+  style:"seedream",
+  tips:["Reference images by order and say what each locks.","Keep text out of the image; add it in design.","Ask explicitly for contrast and a warm grade."]},
+ {id:"soul2",name:"Soul 2.0",maker:"Higgsfield",mono:"SO",status:"ga",res:2048,resLabel:"2K",
+  refsLabel:"Style presets · character reference",refs:{img:3},cost:4,speed:4,
+  s:{photoreal:5,render:2,text:1,consistency:3,edit:2,style:4},
+  best:"Candid, real-looking lifestyle stills: residents at home, couples on balconies, fashion-grade portraits. Base stills for Seedance.",
+  watch:"Not for text, layouts or exact architecture edits.",
+  style:"soul",
+  tips:["Frame it as a spontaneous, unposed candid moment.","Give a real camera: 35mm, f/2.2, eye level, loose handheld.","Add imperfections: visible pores, creased fabric, flyaway hair, fine grain."]},
+ {id:"mjv8",name:"Midjourney V8",maker:"Midjourney",mono:"MJ",status:"preview",res:2048,resLabel:"2K with --hd",
+  refsLabel:"Style refs · moodboards · personalisation",refs:{img:4},cost:3,speed:4,
+  s:{photoreal:3,render:4,text:3,consistency:3,edit:2,style:5},
+  best:"Mood, art direction and aesthetic exploration. Campaign look development and moodboards.",
+  watch:"Lags on complex multi-part prompts. --hd, --q 4 and style refs cost about 4x. Use --raw for photoreal.",
+  style:"mj",
+  tips:["Use --raw for photographic looks.","--sref with a moodboard keeps the campaign look consistent.","Put on-image words in quotes."]},
+ {id:"flux2pro",name:"FLUX.2 Pro",maker:"Black Forest Labs",mono:"FX",status:"ga",res:2048,resLabel:"4MP",
+  refsLabel:"Up to 10 reference images",refs:{img:10},cost:4,speed:4,
+  s:{photoreal:4,render:4,text:4,consistency:4,edit:4,style:3},
+  best:"Precise prompt adherence at low cost. Product and interior shots, hex-accurate brand colours, clean typography.",
+  watch:"Less painterly than Midjourney. Less forgiving of vague prompts.",
+  style:"flux",
+  tips:["Structure: subject, setting, style, camera, lighting.","Hex colours are respected.","Put text in quotes with placement."]}
+];
+
+/* ---------------- Options ---------------- */
+const DIR={
+ shot:{label:"Shot size",opts:["Auto","Extreme wide","Wide / establishing","Full shot","Medium shot","Medium close-up","Close-up","Detail / macro","Over-the-shoulder","Top-down / flat lay"]},
+ angle:{label:"Camera angle",opts:["Auto","Eye level","Low angle","High angle","Bird's-eye / drone","Worm's-eye","Dutch tilt","POV"]},
+ lens:{label:"Lens",opts:["Auto","14mm ultra-wide","24mm wide","Tilt-shift (straight verticals)","35mm","50mm","85mm portrait","135mm telephoto","100mm macro","40mm anamorphic"]},
+ move:{label:"Camera movement",video:true,opts:["Auto","Locked-off tripod","Slow dolly in","Dolly out / reveal","Lateral tracking","Orbit / arc","Crane up","Crane down","Drone push-in","Drone flyover","Gimbal walkthrough","Handheld candid","FPV fly-through","Rack focus","Whip pan"]},
+ light:{label:"Lighting",opts:["Auto","Soft window daylight","Golden hour sun","Blue hour","Overcast soft","Hard midday sun","Warm interior practicals","Night city lights","Studio softbox","Low-key moody","High-key bright"]},
+ time:{label:"Time of day",opts:["Auto","Sunrise","Morning","Midday","Golden hour","Blue hour / dusk","Night"]},
+ grade:{label:"Colour grade",opts:["Auto","Natural, true-to-life","Warm premium","Cool modern","Earthy Rajasthani tones","Dark luxury with gold","Bright and airy","Cinematic teal-orange","Film emulation (Portra 400)"]},
+ real:{label:"Look",opts:["Auto","Candid documentary","Polished commercial","Architectural photography","Cinematic film","Clean CGI render"]}
+};
+const ROLES_V=["Auto","First frame","Last frame","Character / face","Wardrobe / body","Building / product","Environment / location","Style / colour mood","Camera motion","Audio / voice"];
+const ROLES_I=["Auto","Edit this image","Character / face","Building / product","Composition / layout","Style / colour mood","Lighting mood","Brand / logo"];
+
+const EX={
+ video:"15s vertical reel for a 3 BHK sample flat in Jaipur. Open on the living room at golden hour, a young couple walks in and slides open the balcony doors to a city view. Premium but warm, no text on screen, light ambient sound.",
+ image:"Instagram ad for a gated villa township on Ajmer Road, Jaipur. Twilight exterior of a duplex villa with warm interior lights and a family arriving by car. Leave clean space at the top for the headline and price."
+};
+const DEFAULTS=()=>({
+ mode:"video",
+ brief:{video:EX.video,image:EX.image},
+ isEx:{video:true,image:true},
+ v:{duration:15,aspect:"9:16",res:"1080p",audio:"Ambient",priority:"Balanced",needs:["people","arch"]},
+ i:{aspect:"4:5",res:"2K",type:"Ad with text",priority:"Balanced",needs:["text"]},
+ dir:{shot:"Auto",angle:"Auto",lens:"Auto",move:"Auto",light:"Auto",time:"Auto",grade:"Auto",real:"Auto"}
+});
+const NEEDS_V=[["people","Realistic people"],["arch","Architecture / interiors"],["consistency","Same character throughout"],["multishot","Multi-shot story"],["camera","Precise camera move"],["startend","Exact start + end frame"],["text","Logo or text on screen"]];
+const NEEDS_I=[["text","Text in image (Hindi / English)"],["identity","Keep a face from reference"],["exact","Keep building exactly as reference"],["variations","Many fast variations"],["print","Print / OOH size"]];
+const IMG_TYPES=["Photoreal / candid","Architectural render","Ad with text","Edit an existing image","Product / detail hero","Stylised / art direction"];
+
+/* ---------------- State ---------------- */
+let S=Object.assign(DEFAULTS(),store.get("ndml-state",{}));
+S.refs=[];
+let result={video:null,image:null};
+let hist=store.get("ndml-history",[]);
+let tab="rank";
+let sample=null, sampleReady=false, limits=null, ctl=null, busy=false, busyMsg="";
+let openDetail=null;
+const save=()=>store.set("ndml-state",{mode:S.mode,brief:S.brief,isEx:S.isEx,v:S.v,i:S.i,dir:S.dir});
+
+/* ---------------- Keyword read of the brief ---------------- */
+function kw(){
+ const t=(S.brief[S.mode]||"").toLowerCase();
+ return {
+  people:/\b(woman|man|men|women|girl|boy|couple|family|child|kids?|people|buyer|resident|person|agent|grandparents?|she|he)\b/.test(t),
+  arch:/(interior|living room|bedroom|kitchen|lobby|facade|façade|tower|villa|flat|apartment|bhk|building|balcony|clubhouse|township|plot|aerial|drone|walkthrough|elevation|amenit)/.test(t),
+  dialogue:/(dialogue|says|speaks|talking|voice ?over|\bvo\b|line:|conversation|narrat)/.test(t),
+  text:/(text|headline|logo|price|₹|cta|typography|tagline|offer)/.test(t),
+  candid:/(candid|real|natural|documentary|ugc|phone|handheld)/.test(t)
+ };
+}
+
+/* ---------------- Scoring ---------------- */
+const RESNUM={"720p":720,"1080p":1080,"2K":1440,"4K":2160};
+function scoreVideo(m){
+ const k=kw(), v=S.v, need=new Set(v.needs);
+ const w={realism:1.1,motion:1,camera:.6,consistency:.6,multishot:.3,arch:.5,people:.5,text:.2};
+ if(need.has("consistency"))w.consistency+=1.5;
+ if(need.has("multishot"))w.multishot+=1.5;
+ if(need.has("camera"))w.camera+=1.2;
+ if(need.has("people")||k.people)w.people+=1.2;
+ if(need.has("arch")||k.arch)w.arch+=1.2;
+ if(need.has("text")||k.text)w.text+=1;
+ let a=0,b=0;for(const x in w){a+=w[x]*(m.s[x]||3);b+=w[x]*5}
+ const q=a/b, p=(m.speed+m.cost)/10;
+ const mix=v.priority==="Best quality"?[.88,.12]:v.priority==="Fast & cheap"?[.45,.55]:[.72,.28];
+ let sc=(q*mix[0]+p*mix[1])*100;
+ const R=[];
+ const d=+v.duration;
+ if(d>m.dur[1]){const n=Math.ceil(d/m.dur[1]);sc-=16;R.push(["warn",`Max ${m.dur[1]}s, stitch ${n} clips`])}
+ else if(d<m.dur[0]){sc-=4;R.push(["warn",`Min ${m.dur[0]}s, trim in edit`])}
+ else R.push(["ok",`${d}s in one take`]);
+ const rn=RESNUM[v.res]||1080;
+ if(m.res<rn){sc-=12;R.push(["warn",`Tops out at ${m.resLabel.split(" ")[0]}, upscale`])}
+ else R.push(["ok",`${v.res} supported`]);
+ const wantDialogue=v.audio==="Dialogue / VO"||k.dialogue;
+ if(wantDialogue){
+  if(m.audio>=3){sc+=5;R.push(["ok","Strongest lip-synced dialogue"])}
+  else if(m.audio>=2)R.push(["ok","Native dialogue"]);
+  else{sc-=14;R.push(["warn","Add dialogue in post"])}
+ }else if(v.audio==="Ambient"){
+  if(m.audio>=1)R.push(["ok","Native ambient sound"]);else{sc-=5;R.push(["warn","Silent output"])}
+ }
+ const imgs=S.refs.filter(r=>r.kind==="image").length, vids=S.refs.filter(r=>r.kind==="video").length;
+ if(vids){ if(m.refs.vid){sc+=4;R.push(["ok","Takes your reference video"])} else {sc-=12;R.push(["warn","No video reference input"])} }
+ if(imgs>m.refs.img){sc-=8;R.push(["warn",`Uses ${m.refs.img} of your ${imgs} images`])}
+ else if(imgs>1&&m.refs.img>=imgs){sc+=2;R.push(["ok",`All ${imgs} images usable`])}
+ const startEnd=need.has("startend")||S.refs.some(r=>/First frame|Last frame/.test(r.role));
+ if(startEnd){ if(m.refs.startEnd)R.push(["ok","Start/end frame control"]); else {sc-=10;R.push(["warn","No start/end frame"])} }
+ if(need.has("multishot")&&m.s.multishot>=5)R.push(["ok","Strong multi-shot"]);
+ if(m.status==="early"){sc-=9;R.push(["warn","Early access only"])}
+ else if(m.status==="preview"){sc-=2}
+ return {score:Math.max(1,Math.min(99,Math.round(sc))),reasons:R};
+}
+function scoreImage(m){
+ const k=kw(), v=S.i, need=new Set(v.needs);
+ const w={photoreal:1,render:.6,text:.3,consistency:.5,edit:.4,style:.5};
+ const t=v.type;
+ if(t==="Photoreal / candid"){w.photoreal+=1.6;w.style+=.3}
+ if(t==="Architectural render"){w.render+=1.6;w.photoreal+=.6}
+ if(t==="Ad with text"){w.text+=1.8;w.render+=.4}
+ if(t==="Edit an existing image"){w.edit+=2;w.consistency+=.8}
+ if(t==="Product / detail hero"){w.photoreal+=1;w.render+=.8}
+ if(t==="Stylised / art direction"){w.style+=2;w.photoreal-=.5}
+ if(need.has("text")||k.text)w.text+=1.4;
+ if(need.has("identity"))w.consistency+=1.4;
+ if(need.has("exact")){w.edit+=1.2;w.consistency+=1}
+ let a=0,b=0;for(const x in w){const ww=Math.max(0,w[x]);a+=ww*(m.s[x]||3);b+=ww*5}
+ const q=a/b, p=(m.speed+m.cost)/10;
+ let mix=v.priority==="Best quality"?[.88,.12]:v.priority==="Fast & cheap"?[.45,.55]:[.72,.28];
+ if(need.has("variations"))mix=[mix[0]-.15,mix[1]+.15];
+ let sc=(q*mix[0]+p*mix[1])*100;
+ const R=[];
+ const rn={"1K":1024,"2K":2048,"4K":4096}[v.res]||2048;
+ const wantRes=need.has("print")?4096:rn;
+ if(m.res<wantRes){sc-=10;R.push(["warn",`Max ${m.resLabel.split(" ")[0]}, upscale for ${need.has("print")?"print":v.res}`])}
+ else R.push(["ok",`${need.has("print")?"Print-ready":v.res} resolution`]);
+ if(need.has("text")||t==="Ad with text"){
+  if(m.s.text>=5)R.push(["ok","Most accurate text rendering"]);
+  else if(m.s.text>=4)R.push(["ok","Reliable headline text"]);
+  else{sc-=8;R.push(["warn","Text may misspell, add in design"])}
+ }
+ if(t==="Edit an existing image"||need.has("exact")){
+  if(m.s.edit>=5)R.push(["ok","Precise edits that keep the original"]);
+  else if(m.s.edit<=2){sc-=10;R.push(["warn","Weak at exact edits"])}
+ }
+ if(need.has("identity")&&m.s.consistency>=5)R.push(["ok","Strong identity hold"]);
+ if(t==="Photoreal / candid"&&m.id==="soul2"){sc+=4;R.push(["ok","Most candid, real-looking stills"])}
+ if(t==="Stylised / art direction"&&m.s.style>=5)R.push(["ok","Best aesthetic range"]);
+ const imgs=S.refs.length;
+ if(imgs>m.refs.img){sc-=6;R.push(["warn",`Uses ${m.refs.img} of your ${imgs} references`])}
+ if(need.has("variations")&&m.speed>=5)R.push(["ok","Fastest for batches"]);
+ if(m.status==="preview")sc-=2;
+ return {score:Math.max(1,Math.min(99,Math.round(sc))),reasons:R};
+}
+function ranked(){
+ const list=S.mode==="video"?VIDEO:IMAGE;
+ const fn=S.mode==="video"?scoreVideo:scoreImage;
+ const res=result[S.mode];
+ const ai={};
+ if(res&&res.source==="ai"&&Array.isArray(res.data.ranking)){res.data.ranking.forEach(r=>{if(r&&r.id)ai[r.id]=r})}
+ return list.map(m=>{const r=fn(m);const a=ai[m.id];return {m,score:r.score,reasons:r.reasons,ai:a||null,final:a&&isFinite(+a.score)?Math.round((+a.score*.7)+(r.score*.3)):r.score}})
+  .sort((x,y)=>y.final-x.final);
+}
+
+/* ---------------- Render: settings ---------------- */
+function chips(id,opts,val,multi){
+ return `<div class="seg" data-group="${id}">${opts.map(o=>{const key=Array.isArray(o)?o[0]:o,label=Array.isArray(o)?o[1]:o;const on=multi?val.includes(key):val===key;return `<button type="button" class="chip${multi?" multi":""}" data-key="${esc(key)}" aria-pressed="${on}">${esc(label)}</button>`}).join("")}</div>`;
+}
+function renderSettings(){
+ const el=$("#settingsSec");
+ if(S.mode==="video"){
+  const v=S.v;
+  el.innerHTML=`
+   <div class="lbl">Output</div>
+   <div style="display:grid;gap:6px"><label class="lbl" for="dur">Duration</label>
+    <div class="range-row"><input type="range" id="dur" min="2" max="30" step="1" value="${v.duration}"><output class="num" id="durOut">${v.duration}s</output></div></div>
+   <div style="display:grid;gap:6px"><span class="lbl">Aspect ratio</span>${chips("v.aspect",["16:9","9:16","1:1","4:5","21:9"],v.aspect)}</div>
+   <div style="display:grid;gap:6px"><span class="lbl">Resolution</span>${chips("v.res",["720p","1080p","2K","4K"],v.res)}</div>
+   <div style="display:grid;gap:6px"><span class="lbl">Sound</span>${chips("v.audio",["None","Ambient","Dialogue / VO"],v.audio)}</div>
+   <div style="display:grid;gap:6px"><span class="lbl">Priority</span>${chips("v.priority",["Best quality","Balanced","Fast & cheap"],v.priority)}</div>
+   <div style="display:grid;gap:6px"><span class="lbl">This job needs <small>pick any</small></span>${chips("v.needs",NEEDS_V,v.needs,true)}</div>`;
+ }else{
+  const v=S.i;
+  el.innerHTML=`
+   <div class="lbl">Output</div>
+   <div style="display:grid;gap:6px"><span class="lbl">What are you making?</span>${chips("i.type",IMG_TYPES,v.type)}</div>
+   <div style="display:grid;gap:6px"><span class="lbl">Aspect ratio</span>${chips("i.aspect",["1:1","4:5","9:16","16:9","3:2","2:3","3:1 hoarding"],v.aspect)}</div>
+   <div style="display:grid;gap:6px"><span class="lbl">Resolution</span>${chips("i.res",["1K","2K","4K"],v.res)}</div>
+   <div style="display:grid;gap:6px"><span class="lbl">Priority</span>${chips("i.priority",["Best quality","Balanced","Fast & cheap"],v.priority)}</div>
+   <div style="display:grid;gap:6px"><span class="lbl">This job needs <small>pick any</small></span>${chips("i.needs",NEEDS_I,v.needs,true)}</div>`;
+ }
+ const dur=$("#dur");
+ if(dur)dur.addEventListener("input",()=>{S.v.duration=+dur.value;$("#durOut").textContent=dur.value+"s";save();renderRank()});
+}
+document.addEventListener("click",e=>{
+ const c=e.target.closest(".chip");if(!c)return;
+ const g=c.parentElement.dataset.group;if(!g)return;
+ const [obj,key]=g.split(".");const o=S[obj];const val=c.dataset.key;
+ if(c.classList.contains("multi")){const i=o[key].indexOf(val);if(i>=0)o[key].splice(i,1);else o[key].push(val)}
+ else o[key]=val;
+ c.parentElement.querySelectorAll(".chip").forEach(b=>{const on=c.classList.contains("multi")?o[key].includes(b.dataset.key):b.dataset.key===o[key];b.setAttribute("aria-pressed",on)});
+ save();renderRank();
+});
+function renderDir(){
+ $("#dirGrid").innerHTML=Object.entries(DIR).filter(([k,d])=>!(d.video&&S.mode!=="video")).map(([k,d])=>`
+  <div><label class="lbl" for="dir-${k}">${esc(d.label)}</label>
+  <select id="dir-${k}" data-dir="${k}">${d.opts.map(o=>`<option${S.dir[k]===o?" selected":""}>${esc(o)}</option>`).join("")}</select></div>`).join("");
+ $("#dirGrid").querySelectorAll("select").forEach(s=>s.addEventListener("change",()=>{S.dir[s.dataset.dir]=s.value;save()}));
+}
+
+/* ---------------- References ---------------- */
+let refSeq=0;
+function refLabel(r){
+ const imgs=S.refs.filter(x=>x.kind==="image"), vids=S.refs.filter(x=>x.kind==="video");
+ return r.kind==="image"?"Image "+(imgs.indexOf(r)+1):"Video "+(vids.indexOf(r)+1);
+}
+function renderRefs(){
+ const roles=S.mode==="video"?ROLES_V:ROLES_I;
+ $("#refs").innerHTML=S.refs.map(r=>`
+  <div class="ref" data-id="${r.id}">
+   ${r.thumb?`<img class="thumb" src="${r.thumb}" alt="">`:`<div class="thumb"></div>`}
+   <div class="meta">
+    <div class="nm"><b>${esc(refLabel(r))}</b>${esc(r.name)}${r.kind==="video"?` · ${r.duration?r.duration.toFixed(1)+"s":"reading…"}${r.frames?` · ${r.frames.length} frames`:""}`:""}</div>
+    <select aria-label="Role for ${esc(refLabel(r))}" data-role="${r.id}">${roles.map(o=>`<option${r.role===o?" selected":""}>${esc(o)}</option>`).join("")}</select>
+   </div>
+   <button class="xbtn" type="button" data-rm="${r.id}" aria-label="Remove ${esc(r.name)}">×</button>
+  </div>`).join("");
+ $("#refs").querySelectorAll("[data-role]").forEach(s=>s.addEventListener("change",()=>{const r=S.refs.find(x=>x.id==s.dataset.role);if(r)r.role=s.value;renderRank()}));
+ $("#refs").querySelectorAll("[data-rm]").forEach(b=>b.addEventListener("click",()=>{S.refs=S.refs.filter(x=>x.id!=b.dataset.rm);renderRefs();renderRank()}));
+}
+function toJpeg(src,maxW){
+ return new Promise((res,rej)=>{
+  const w0=src.videoWidth||src.naturalWidth||src.width, h0=src.videoHeight||src.naturalHeight||src.height;
+  const sc=Math.min(1,maxW/Math.max(w0,h0));const c=document.createElement("canvas");
+  c.width=Math.max(1,Math.round(w0*sc));c.height=Math.max(1,Math.round(h0*sc));
+  c.getContext("2d").drawImage(src,0,0,c.width,c.height);
+  c.toBlob(b=>b?res(b):rej(new Error("encode")),"image/jpeg",.86);
+ });
+}
+function loadImage(file){
+ return new Promise((res,rej)=>{const u=URL.createObjectURL(file);const im=new Image();im.onload=()=>res({im,u});im.onerror=()=>rej(new Error("img"));im.src=u});
+}
+function videoFrames(file,ref){
+ return new Promise(resolve=>{
+  const u=URL.createObjectURL(file);const v=document.createElement("video");
+  v.muted=true;v.playsInline=true;v.preload="auto";v.src=u;
+  const frames=[];let times=[];let i=0;let done=false;
+  const finish=()=>{if(done)return;done=true;resolve(frames)};
+  setTimeout(finish,20000);
+  v.addEventListener("loadedmetadata",()=>{
+   ref.duration=v.duration||0;
+   const d=v.duration||1;times=[.06,.35,.65,.94].map(f=>Math.min(d-0.05,Math.max(0,d*f)));
+   v.currentTime=times[0];
+  });
+  v.addEventListener("seeked",async()=>{
+   try{const b=await toJpeg(v,1280);frames.push(b);if(i===0)ref.thumb=URL.createObjectURL(b)}catch(e){}
+   i++;if(i<times.length)v.currentTime=times[i];else finish();
+  });
+  v.addEventListener("error",finish);
+ });
+}
+async function addFiles(files){
+ for(const f of files){
+  if(S.refs.length>=12)break;
+  const isV=f.type.startsWith("video/"), isI=f.type.startsWith("image/");
+  if(!isV&&!isI)continue;
+  const r={id:++refSeq,kind:isV?"video":"image",name:f.name||(isV?"clip":"pasted image"),role:"Auto",thumb:null,blob:null,frames:null,duration:0};
+  S.refs.push(r);renderRefs();
+  try{
+   if(isI){const {im,u}=await loadImage(f);r.thumb=u;r.blob=await toJpeg(im,1600)}
+   else{r.frames=await videoFrames(f,r);if(!r.frames.length)r.name+=" (could not read frames)"}
+  }catch(e){r.name+=" (could not read)"}
+  renderRefs();renderRank();
+ }
+}
+const drop=$("#drop"),fileIn=$("#fileIn");
+drop.addEventListener("click",()=>fileIn.click());
+drop.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();fileIn.click()}});
+fileIn.addEventListener("change",()=>{addFiles([...fileIn.files]);fileIn.value=""});
+["dragenter","dragover"].forEach(t=>drop.addEventListener(t,e=>{e.preventDefault();drop.classList.add("over")}));
+["dragleave","drop"].forEach(t=>drop.addEventListener(t,e=>{e.preventDefault();drop.classList.remove("over")}));
+drop.addEventListener("drop",e=>addFiles([...(e.dataTransfer?e.dataTransfer.files:[])]));
+document.addEventListener("paste",e=>{const fs=[...(e.clipboardData?e.clipboardData.files:[])];if(fs.length){addFiles(fs)}});
+
+/* ---------------- Render: ranking ---------------- */
+function statusPill(s){return s==="preview"?`<span class="status preview">Preview</span>`:s==="early"?`<span class="status early">Early access</span>`:""}
+function renderRank(){
+ const list=ranked();
+ $("#rankCount").textContent=list.length;
+ const res=result[S.mode];
+ const pickId=res?res.model:null;
+ const v=S.mode==="video";
+ let head=`<div class="row" style="justify-content:space-between"><div class="note">${v?`${S.v.duration}s · ${S.v.aspect} · ${S.v.res} · sound: ${S.v.audio.toLowerCase()}`:`${S.i.type} · ${S.i.aspect} · ${S.i.res}`}${S.refs.length?` · ${S.refs.length} reference${S.refs.length>1?"s":""}`:""}</div>${res&&res.source==="ai"?`<span class="note">Scores blend Claude's read of your references with the spec match</span>`:`<span class="note">Spec match score. Run Evaluate for a reference-aware ranking</span>`}</div>`;
+ const cards=list.map((x,i)=>{
+  const m=x.m;const open=openDetail===m.id;
+  const specs=v?[m.resLabel,`${m.dur[0]}–${m.dur[1]}s`,m.audioLabel,m.refsLabel]:[m.resLabel,m.refsLabel,"Cost "+("₹".repeat(6-m.cost)),"Speed "+"●".repeat(m.speed)];
+  return `<article class="mcard${i===0?" top":""}">
+   <div class="rank num">${String(i+1).padStart(2,"0")}</div>
+   <div style="min-width:0">
+    <div class="mhead">
+     <div class="mono-tile">${esc(m.mono)}</div>
+     <div class="mname"><h3>${esc(m.name)} ${statusPill(m.status)}${pickId===m.id?`<span class="status pick">Prompt written</span>`:""}</h3><div class="maker">${esc(m.maker)}</div></div>
+     <div class="fit"><b class="num">${x.final}<small>/100</small></b><div class="bar"><i style="width:${x.final}%"></i></div></div>
+    </div>
+    <div class="specs">${specs.map(s=>`<span class="spec">${esc(s)}</span>`).join("")}</div>
+    <div class="why">${x.reasons.map(r=>`<span class="r ${r[0]}">${esc(r[1])}</span>`).join("")}</div>
+    ${x.ai&&x.ai.why?`<div class="ai-why"><b>Claude's read:</b> ${esc(x.ai.why)}</div>`:""}
+    <div class="mfoot">
+     <button class="btn btn-sm ${i===0?"btn-red":"btn-ghost"}" type="button" data-write="${m.id}">Write prompt for ${esc(m.name)}</button>
+     <button class="textcta" type="button" data-detail="${m.id}" aria-expanded="${open}">${open?"Hide details":"Best for, watch-outs, prompt tips"} →</button>
+    </div>
+    ${open?`<div class="details">
+     <div><div class="k">Best for</div>${esc(m.best)}</div>
+     <div><div class="k">Watch out</div>${esc(m.watch)}</div>
+     <div style="grid-column:1/-1"><div class="k">How to prompt it</div><ul>${m.tips.map(t=>`<li>${esc(t)}</li>`).join("")}</ul></div>
+    </div>`:""}
+   </div></article>`;
+ }).join("");
+ $("#pRank").innerHTML=head+`<div class="mlist">${cards}</div><div class="srcnote">Specs compiled October 2026 from vendor model pages, Hedra, Atlas Cloud, LMArena summaries and launch coverage. Status: Preview and Early access mean limited or changing availability.</div>`;
+ $("#pRank").querySelectorAll("[data-detail]").forEach(b=>b.addEventListener("click",()=>{openDetail=openDetail===b.dataset.detail?null:b.dataset.detail;renderRank()}));
+ $("#pRank").querySelectorAll("[data-write]").forEach(b=>b.addEventListener("click",()=>generate(b.dataset.write)));
+}
+
+/* ---------------- Local template prompt ---------------- */
+function pick(key,fallback){const v=S.dir[key];return v&&v!=="Auto"?v:fallback}
+function autoDir(){
+ const k=kw();const v=S.mode==="video";const t=S.i.type;
+ const arch=k.arch||(v?S.v.needs.includes("arch"):t==="Architectural render");
+ const people=k.people||(v&&S.v.needs.includes("people"));
+ const candid=k.candid||pick("real","")==="Candid documentary"||(!v&&t==="Photoreal / candid");
+ return {
+  shot:pick("shot",arch&&!people?"Wide / establishing":people?"Medium shot":"Wide / establishing"),
+  angle:pick("angle",arch&&!people?"Eye level, camera height 1.5 m":"Eye level"),
+  lens:pick("lens",candid?"35mm, f/2.2":arch?"24mm with corrected verticals":"35mm, f/2.8"),
+  move:pick("move",candid?"Loose handheld follow, slight sway":arch?"Slow gimbal dolly forward at walking pace":"Slow push-in"),
+  light:pick("light",/golden/i.test(S.brief[S.mode])?"Golden hour sun":/twilight|dusk|night/i.test(S.brief[S.mode])?"Blue hour":"Soft window daylight"),
+  time:pick("time",/golden/i.test(S.brief[S.mode])?"Golden hour":/twilight|dusk/i.test(S.brief[S.mode])?"Blue hour / dusk":"Morning"),
+  grade:pick("grade","Warm premium"),
+  real:pick("real",candid?"Candid documentary":arch?"Architectural photography":"Polished commercial")
+ };
+}
+const LIGHT_TX={
+ "Soft window daylight":"soft diffused daylight from large windows camera-left, around 5600K, gentle falloff, open shadows",
+ "Golden hour sun":"low golden-hour sun raking in from camera-right, around 3200K, long warm shadows, glowing rim light on edges",
+ "Blue hour":"blue-hour ambient sky around 8000K balanced with warm 2700K interior practicals glowing through windows",
+ "Overcast soft":"even overcast skylight, shadowless, true colour",
+ "Hard midday sun":"hard overhead sun, crisp defined shadows, high contrast",
+ "Warm interior practicals":"warm 2700K practical lamps and cove lighting, pools of light, soft shadows",
+ "Night city lights":"night exterior with city lights, sodium and LED mix, glossy reflections",
+ "Studio softbox":"large softbox key at 45 degrees, subtle fill, clean background",
+ "Low-key moody":"single motivated key light, deep shadows, high contrast, selective highlights",
+ "High-key bright":"bright high-key lighting, lifted shadows, airy whites"
+};
+const GRADE_TX={
+ "Natural, true-to-life":"natural true-to-life colour, neutral whites",
+ "Warm premium":"warm premium grade, creamy highlights, rich wood and stone tones, gentle contrast",
+ "Cool modern":"cool modern grade, clean whites, steel blues, crisp contrast",
+ "Earthy Rajasthani tones":"earthy grade with sandstone pinks, ochre and terracotta, warm sunlit haze",
+ "Dark luxury with gold":"dark luxury grade, deep navy and charcoal shadows with gold highlights",
+ "Bright and airy":"bright airy grade, soft pastels, lifted blacks",
+ "Cinematic teal-orange":"cinematic teal-orange grade, warm skin, cool shadows",
+ "Film emulation (Portra 400)":"Kodak Portra 400 film emulation, soft grain, gentle warm skin tones"
+};
+function realismTx(r){
+ return {
+  "Candid documentary":"spontaneous unposed candid moment, visible skin pores, natural fabric creasing, flyaway hair, fine grain, slight lens falloff, framing a touch imperfect",
+  "Polished commercial":"polished commercial finish, crisp detail, clean styling, controlled reflections",
+  "Architectural photography":"architectural photography, perfectly straight verticals, accurate materials and proportions, clean lines, no distortion",
+  "Cinematic film":"cinematic film look, shallow depth of field, gentle halation, 24fps motion feel",
+  "Clean CGI render":"clean high-end 3D visualisation, physically accurate materials, global illumination"
+ }[r]||"photographic realism, accurate materials";
+}
+function buildLocal(modelId){
+ const v=S.mode==="video";const list=v?VIDEO:IMAGE;const m=list.find(x=>x.id===modelId)||list[0];
+ const d=autoDir();const brief=(S.brief[S.mode]||"").trim()||"(no brief)";
+ const light=LIGHT_TX[d.light]||d.light;const grade=GRADE_TX[d.grade]||d.grade;const real=realismTx(d.real);
+ const aspect=v?S.v.aspect:S.i.aspect.replace(" hoarding","");
+ const imgs=S.refs.filter(r=>r.kind==="image"), vids=S.refs.filter(r=>r.kind==="video");
+ const refmap=S.refs.map(r=>({ref:refLabel(r),use:r.role==="Auto"?(r.kind==="video"?"Motion and camera reference":"General visual reference"):r.role}));
+ const comp=v?`${d.shot}, subject on the right third, layered depth with a foreground element, midground subject, background view${aspect==="9:16"?", vertical framing with headroom kept clear":""}`:`${d.shot}, subject placed on a third, clear foreground, midground and background layers${(S.i.needs.includes("text")||S.i.type==="Ad with text")?", clean negative space in the top third for headline and price":""}`;
+ const cam={shot:d.shot,angle:d.angle,lens:d.lens,movement:v?d.move:"Static",height:/drone|bird/i.test(d.angle)?"40-60 m aerial":"1.5 m (eye level)"};
+ let timeline=[];
+ if(v){const D=S.v.duration;const a=Math.max(1,Math.round(D*.3)),b=Math.max(a+1,Math.round(D*.7));
+  timeline=[{t:`0-${a}s`,beat:`Establish: ${d.shot.toLowerCase()} of the space, ${d.move.toLowerCase()}.`},{t:`${a}-${b}s`,beat:"Action: the main moment from the brief plays out, camera keeps the subject on the third."},{t:`${b}-${D}s`,beat:"Hero: settle on the payoff view, movement eases to a stop, hold for a beat."}];
+ }
+ const audio=v?(S.v.audio==="None"?"No audio.":S.v.audio==="Ambient"?"Ambient room tone, soft city hum, footsteps and a door slide, no music, no dialogue.":"Natural dialogue in Hindi or English as scripted, close-miked, room ambience under it."):"";
+ const neg=v?"warped architecture, bending walls, flickering textures, morphing faces, extra fingers, sliding feet, jittery camera, text artifacts, logos, watermarks, oversaturated colour, plastic skin":"warped lines, bent verticals, extra fingers, distorted faces, misspelled or garbled text, watermark, logo artifacts, oversaturation, plastic skin, cluttered composition";
+ const D={
+  reference_read:S.refs.length?"Quick template does not read references. Run Evaluate & write prompt for a reference-aware prompt.":"No references added.",
+  pick:m.id,ranking:[],
+  prompt:{subject:brief,action:v?"As described in the brief, natural pacing.":"",environment:"From the brief, Jaipur residential context.",camera:cam,lighting:`${d.time}: ${light}`,composition:comp,color_grade:grade,texture_realism:real,audio,timeline,negative:neg,reference_map:refmap,
+   settings_line:v?`${S.v.aspect} · ${S.v.duration}s · ${S.v.res} · sound ${S.v.audio.toLowerCase()}`:`${S.i.aspect} · ${S.i.res}`,
+   final_prompt:""},
+  tips:m.tips.slice()
+ };
+ D.prompt.final_prompt=formatFinal(m,D.prompt,brief,d,{imgs,vids,aspect});
+ return D;
+}
+function formatFinal(m,p,brief,d,o){
+ const cam=p.camera;
+ const camLine=`${cam.shot}, ${cam.angle.toLowerCase()}, ${cam.lens}${S.mode==="video"?`, ${cam.movement.toLowerCase()}`:""}.`;
+ const rest=`Camera: ${camLine}\nComposition: ${p.composition}.\nLighting: ${p.lighting}.\nGrade: ${p.color_grade}.\nRealism: ${p.texture_realism}.`;
+ const base=`${brief}\n\n${rest}`;
+ const map=p.reference_map.length?p.reference_map.map(r=>`@${r.ref.replace(" ","")} = ${r.use}`).join("; "):"";
+ switch(m.style){
+  case "seedance":
+   return `${map?`IMAGE MAP: ${map}.\n\n`:""}${brief}\n\nTIMELINE\n${p.timeline.map(b=>`[${b.t}] ${b.beat}`).join("\n")}\n\nCAMERA: ${camLine} Subtle natural micro-shake, motion feels caught, not staged.\nCOMPOSITION: ${p.composition}.\nLIGHTING: ${p.lighting}.\nGRADE: ${p.color_grade}.\nREALISM: ${p.texture_realism}.\nAUDIO: ${p.audio}\nFORMAT: ${p.settings_line}.`;
+  case "kling": case "wan": case "flux":
+   return `${camLine} ${brief} ${p.timeline.length?p.timeline.map(b=>`(${b.t}) ${b.beat}`).join(" "):""} Composition: ${p.composition}. Lighting: ${p.lighting}. Grade: ${p.color_grade}. ${p.texture_realism}.${p.audio?` Audio: ${p.audio}`:""}${map?`\nReferences: ${map}.`:""}\n\nNegative: ${p.negative}`;
+  case "minimax":
+   return `[${/dolly|push/i.test(cam.movement)?"Push in":/orbit|arc/i.test(cam.movement)?"Truck left":/crane up/i.test(cam.movement)?"Pedestal up":/tripod|locked/i.test(cam.movement)?"Static shot":"Tracking shot"}] ${brief} ${p.composition}. ${p.lighting}. ${p.color_grade}. ${p.texture_realism}.`;
+  case "veo":
+   return `${camLine} ${brief}\nComposition: ${p.composition}.\nLighting: ${p.lighting}. Grade: ${p.color_grade}. ${p.texture_realism}.\nAudio: ${p.audio}`;
+  case "omni":
+   return `Create a ${p.settings_line} video. ${brief}\n${rest}\nAudio: ${p.audio}${map?`\nUse the inputs in order: ${map}.`:""}`;
+  case "gpt":
+   return `Create a ${o.aspect} ${S.i.type.toLowerCase()} image.\n\nScene: ${brief}\n${rest}${(S.i.needs.includes("text")||S.i.type==="Ad with text")?`\nLayout: keep the top third as clean negative space. Text: "HEADLINE HERE" in a light geometric sans, large, left-aligned; "Price line here" below it, smaller. Render text exactly as written.`:""}${map?`\nReferences: ${map}.`:""}`;
+  case "banana":
+   return `${S.refs.some(r=>r.role==="Edit this image")?`Using ${p.reference_map.find(r=>r.use==="Edit this image").ref}, `:""}${brief}\n${rest}${S.i.needs.includes("exact")?"\nKeep the building's facade, windows, balconies, proportions and materials exactly as in the reference.":""}\nAspect ratio ${o.aspect}.`;
+  case "seedream":
+   return `${brief}. ${camLine} ${p.composition}. ${p.lighting}. ${p.color_grade}, rich contrast. ${p.texture_realism}.${map?` References: ${map}.`:""}`;
+  case "soul":
+   return `Spontaneous, unposed candid photograph. ${brief}. Shot on ${cam.lens}, ${cam.angle.toLowerCase()}, loose handheld framing. ${p.lighting}. ${p.texture_realism}. ${p.color_grade}. Feels like a photo taken a half-second before anyone noticed.`;
+  case "mj":
+   return `${brief}, ${cam.shot.toLowerCase()}, ${cam.lens}, ${p.lighting}, ${p.color_grade}, ${p.texture_realism} --ar ${o.aspect} ${/Candid|Architectural|Polished/.test(d.real)?"--raw ":""}${S.i.res!=="1K"?"--hd ":""}--stylize 150`;
+  default: return base;
+ }
+}
+
+/* ---------------- Claude prompt engine ---------------- */
+function catalogText(){
+ const v=S.mode==="video";
+ return (v?VIDEO:IMAGE).map(m=>JSON.stringify(v?{id:m.id,name:m.name,status:m.status,max_res:m.resLabel,duration:`${m.dur[0]}-${m.dur[1]}s`,audio:m.audioLabel,refs:m.refsLabel,best:m.best,watch:m.watch,prompt_style:m.tips.join(" ")}:{id:m.id,name:m.name,status:m.status,max_res:m.resLabel,refs:m.refsLabel,best:m.best,watch:m.watch,prompt_style:m.tips.join(" ")})).join("\n");
+}
+const STYLE_GUIDE={
+ seedance:"Seedance format: start with 'IMAGE MAP:' assigning each @Image1..@ImageN / @Video1 a job (exact first frame + grade, face, wardrobe, environment, motion). Then 'TIMELINE' with second-by-second beats [0-3s] etc. that add up exactly to the duration, one camera idea per beat. Then CAMERA, COMPOSITION, LIGHTING, GRADE, REALISM, AUDIO, FORMAT lines. For realistic people use the candid layer: loose handheld, three-layer micro-shake, late reframes, nothing composed, cut before the moment resolves.",
+ kling:"Kling format: one flowing cinematic paragraph (shot, subject, action, environment, camera move with speed, lighting, style). For multi-shot write 'Shot 1 (0-5s): ...' lines. Refer to references as [Element 1], [Element 2]. Separate 'Negative:' line.",
+ minimax:"MiniMax H3 format: natural language describing only what moves from the start image, with bracketed camera commands such as [Push in], [Truck left], [Pan right], [Pedestal up], [Tracking shot], [Static shot].",
+ veo:"Veo format: cinematic paragraph for one beat; dialogue in quotes with a speaker tag (The woman says: \"...\"); an 'Audio:' line for ambience and SFX.",
+ omni:"Gemini Omni format: a clear director's brief referencing inputs by order, followed by 2-3 short optional edit instructions the user can send next.",
+ wan:"Wan format: structured paragraph plus timestamped beats up to 30s; name the voice language and tone.",
+ flux:"FLUX format: structured description subject, setting, style, camera, lighting; keyframes listed in order for video; text or dialogue in quotes; hex colours allowed.",
+ gpt:"GPT Image format: brief it like a layout. Canvas and aspect, zones top to bottom, then imagery as photography direction, then every text line in double quotes with weight, relative size, colour (hex) and position. Say 'render text exactly as written'.",
+ banana:"Nano Banana format: natural sentences. For edits: 'Using Image 1, change X. Keep Y exactly the same.' Name everything that must not move (facade, windows, proportions, faces).",
+ seedream:"Seedream format: concise descriptive prompt, references by order with what each locks, push contrast and grade explicitly, keep text out.",
+ soul:"Soul 2.0 format: candid photography language. 'Spontaneous, unposed candid' framing, real camera and lens, micro body language, exhaustive environment textures, imperfection cues (pores, creases, flyaways, grain, lens falloff).",
+ mj:"Midjourney format: descriptive prose without bullet structure, then parameters: --ar W:H, --raw for photoreal, --hd for 2K, --stylize value, mention --sref / --oref usage if references are style or character. Text in quotes."
+};
+function buildAIPrompt(target,refine,prev){
+ const v=S.mode==="video";const d=S.dir;const set=v?S.v:S.i;
+ const imgs=S.refs.filter(r=>r.kind==="image"), vids=S.refs.filter(r=>r.kind==="video");
+ let refLines=[];let n=0;
+ imgs.forEach(r=>{if(r.blob){n++;refLines.push(`Attached image ${n} = ${refLabel(r)} ("${r.name}"), role: ${r.role}`)}});
+ vids.forEach(r=>{if(r.frames&&r.frames.length){const a=n+1;n+=r.frames.length;refLines.push(`Attached images ${a}-${n} = ${refLabel(r)} ("${r.name}", ${r.duration?r.duration.toFixed(1)+"s":""}) as key frames at roughly 6%, 35%, 65%, 94% of its length, role: ${r.role}. Read its camera motion, pacing, framing and lighting from how the frames change.`)}});
+ const pre=ranked().slice(0,5).map(x=>`${x.m.id} ${x.score}`).join(", ");
+ const tm=target?(v?VIDEO:IMAGE).find(m=>m.id===target):null;
+ const shape=`{
+ "reference_read": "2-4 sentences: what the references actually show (subject, materials, framing, light, motion) and how you used them",
+ "ranking": [{"id": "model id from catalog", "score": 0-100, "why": "one specific sentence for this job"}],  // top 4, best first
+ "pick": "model id the prompt is written for",
+ "prompt": {
+  "subject": "who/what, with concrete physical description",
+  "action": "${v?"what happens, with pacing":"pose or moment"}",
+  "environment": "setting with materials, props, depth layers",
+  "camera": {"shot": "", "angle": "", "lens": "focal length + aperture", "movement": "${v?"move, direction and speed":"Static"}", "height": "camera height"},
+  "lighting": "key source, direction, quality, colour temperature in K, fill, practicals, shadows",
+  "composition": "subject placement in frame, foreground/midground/background, leading lines, negative space, precise spatial prepositions",
+  "color_grade": "",
+  "texture_realism": "material and imperfection cues",
+  "audio": "${v?"ambience, SFX, dialogue lines in quotes with language, or none":""}",
+  "timeline": [${v?`{"t": "0-3s", "beat": "..."}`:""}],
+  "negative": "comma-separated failure modes to avoid",
+  "reference_map": [{"ref": "Image 1 / Video 1", "use": "what it locks in the output"}],
+  "settings_line": "${v?"aspect · duration · resolution · sound":"aspect · resolution"}",
+  "final_prompt": "the complete paste-ready prompt in the target model's format"
+ },
+ "tips": ["2-4 short practical tips for running this on the chosen model"]
+}`;
+ let p=`You are the senior AI cinematographer and prompt engineer at Nine Degree, a real estate marketing and creative agency in Jaipur, India (clients: residential towers, villas, plotted townships, sample flats, lifestyle campaigns; also projects in Kinshasa, DRC). An in-house ${v?"video editor":"graphic designer"} is briefing you. Your job: read the brief and every attached reference closely, rank the ${v?"video":"image"} models below for THIS job, and write a production-ready prompt.
+
+BRIEF:
+${(S.brief[S.mode]||"").trim()||"(empty, infer from references)"}
+
+OUTPUT SETTINGS:
+${v?`Duration ${set.duration}s, aspect ${set.aspect}, resolution ${set.res}, sound: ${set.audio}, priority: ${set.priority}`:`Type: ${set.type}, aspect ${set.aspect}, resolution ${set.res}, priority: ${set.priority}`}
+Needs: ${(set.needs||[]).join(", ")||"none flagged"}
+
+DIRECTION (Auto = you decide from brief and references):
+${Object.entries(DIR).filter(([k,x])=>!(x.video&&!v)).map(([k,x])=>`${x.label}: ${d[k]}`).join("\n")}
+
+REFERENCES:
+${refLines.length?refLines.join("\n"):"None attached."}
+
+MODEL CATALOG (Oct 2026, one JSON per line):
+${catalogText()}
+
+SPEC-MATCH PRE-SCORE (heuristic, override it when the references say otherwise): ${pre}
+
+${tm?`TARGET MODEL: write the final prompt for ${tm.name} (${tm.id}) even if it is not your top pick; set "pick" to "${tm.id}".`:`Write the final prompt for your top-ranked model.`}
+
+FORMAT RULES PER MODEL:
+${Object.entries(STYLE_GUIDE).filter(([k])=>(v?VIDEO:IMAGE).some(m=>m.style===k)).map(([k,s])=>"- "+s).join("\n")}
+
+PROMPT QUALITY RULES:
+- Be concrete and visual. Every camera line names shot size, angle, camera height, lens in mm with aperture${v?", and movement with direction and speed":""}.
+- Lighting names the key source, its direction relative to camera, quality (hard/soft), colour temperature in Kelvin, fill and practicals.
+- Composition uses exact spatial prepositions: where the subject sits in frame (left third, centre), what is in front of, behind, to the left of it; foreground, midground, background layers; leading lines; negative space for copy when text will be added.
+- If references show a building, interior, product or person, describe what you see precisely (materials, colours, geometry, wardrobe, age range) and state that it must be preserved exactly. Never invent architecture that contradicts a reference.
+- People default to natural, believable Indian residents unless the brief says otherwise; give wardrobe, age range, micro-expressions and body language.
+- Photoreal work gets a realism layer: skin pores, fabric creasing, slight lens falloff, fine grain; candid work gets imperfect framing.
+${v?"- Video: timeline beats must add up exactly to the duration. One camera idea per beat. Describe motion speed and easing. If the duration exceeds the chosen model's max, plan clean cut points and say so in tips.\n":"- Image: if text is needed, put every word in double quotes with its placement; otherwise reserve clean negative space and say text is added in design.\n"}- Negative list: concrete failure modes (warped verticals, melting architecture, flicker, extra fingers, garbled text, plastic skin).
+- No em dashes anywhere. Plain punctuation.
+- final_prompt is self-contained and paste-ready, ${v?"150-380":"90-260"} words, in the target model's format.
+
+Reply with only JSON in exactly this shape (comments are guidance, omit them):
+${shape}`;
+ if(refine&&prev){p+=`\n\nPREVIOUS RESULT (revise it, keep what works):\n${JSON.stringify(prev).slice(0,12000)}\n\nREVISION REQUEST FROM THE USER: ${refine}\nApply the request, keep the same JSON shape.`}
+ return p;
+}
+async function collectImages(){
+ const out=[];
+ S.refs.filter(r=>r.kind==="image").forEach(r=>{if(r.blob)out.push(r.blob)});
+ S.refs.filter(r=>r.kind==="video").forEach(r=>{(r.frames||[]).forEach(f=>out.push(f))});
+ const max=sample?(limits&&limits.images?limits.images.maxCount:0):(apiMode?API_MAX_IMAGES:0);
+ return max?out.slice(0,max):[];
+}
+
+/* ---------------- Server prompt engine (Vercel /api/generate) ---------------- */
+const API_MAX_IMAGES=8;
+let apiMode=false, needPass=false, lastCall=null;
+function blobToB64(blob,maxW){
+ return new Promise(async(res,rej)=>{
+  try{
+   const bmp=await createImageBitmap(blob);
+   const sc=Math.min(1,maxW/Math.max(bmp.width,bmp.height));const c=document.createElement("canvas");
+   c.width=Math.max(1,Math.round(bmp.width*sc));c.height=Math.max(1,Math.round(bmp.height*sc));
+   c.getContext("2d").drawImage(bmp,0,0,c.width,c.height);
+   const url=c.toDataURL("image/jpeg",.82);res(url.slice(url.indexOf(",")+1));
+  }catch(e){rej(e)}
+ });
+}
+async function apiJson(prompt,opts){
+ const images=[];
+ for(const b of (opts.images||[])){try{images.push(await blobToB64(b,1024))}catch(e){}}
+ if(opts.onText)opts.onText({text:"",delta:""});
+ let r;
+ try{
+  r=await fetch("/api/generate",{method:"POST",headers:{"content-type":"application/json","x-nd-pass":store.get("ndml-pass","")},body:JSON.stringify({prompt,images}),signal:opts.signal});
+ }catch(e){throw {code:e&&e.name==="AbortError"?"cancelled":"upstream_error"}}
+ const j=await r.json().catch(()=>null);
+ if(!r.ok||!j)throw {code:(j&&j.code)||(r.status===401?"needs_pass":"upstream_error"),message:j&&j.error};
+ return j.data;
+}
+function setBusy(on,msg){busy=on;busyMsg=msg||"";$("#goBtn").disabled=on;$("#tplBtn").disabled=on;renderPrompt()}
+async function generate(target,refine){
+ const v=S.mode==="video";
+ if(busy)return;
+ lastCall=[target,refine];
+ const engine=sample?(p,o)=>sample.json(p,o):apiMode?apiJson:null;
+ if(!engine){ // template fallback
+  const id=target||ranked()[0].m.id;
+  result[S.mode]={source:"template",model:id,data:buildLocal(id)};
+  pushHist();showTab("prompt");renderRank();renderPrompt();return;
+ }
+ ctl=new AbortController();
+ showTab("prompt");
+ setBusy(true,S.refs.length?"Reading your references and ranking models…":"Ranking models and writing the prompt…");
+ const prev=refine&&result[S.mode]?result[S.mode].data:null;
+ const mode=S.mode;
+ try{
+  const images=await collectImages();
+  if(S.refs.length&&!images.length&&!apiMode&&!(limits&&limits.images)){busyMsg="This view can't send images to Claude, so the prompt uses your brief and settings only…";renderPrompt()}
+  const opts={signal:ctl.signal,modelTier:"default",cache:false,onText:({text})=>{busyMsg=text?`Writing the prompt… ${text.length.toLocaleString()} characters`:"Claude is studying the references and writing the prompt. This takes 20-60 seconds…";const el=document.getElementById("busyMsg");if(el)el.textContent=busyMsg}};
+  if(images.length)opts.images=images;
+  needPass=false;
+  const data=await engine(buildAIPrompt(target||(prev?result[mode].model:null),refine,prev),opts);
+  if(!data||!data.prompt||!data.prompt.final_prompt)throw {code:"invalid_json"};
+  const list=mode==="video"?VIDEO:IMAGE;
+  const id=list.some(m=>m.id===data.pick)?data.pick:(target||ranked()[0].m.id);
+  result[mode]={source:"ai",model:id,data};
+  pushHist();
+ }catch(e){
+  const code=e&&e.code;
+  const msg={cancelled:"",not_granted:"Claude access wasn't allowed for this page, so here's a quick template instead. Allow it from the page's permissions to get reference-aware prompts.",sampling_disabled:"Claude isn't available on this account, so here's a quick template instead.",rate_limited:"Too many requests just now. Wait a minute and try again.",image_rejected:"One of the references couldn't be read. Try a JPG or PNG under 20 MB.",invalid_json:"The answer came back incomplete. Try again, or simplify the brief.",refused:"Claude declined this brief. Rephrase it and try again.",prompt_too_large:"Too much input. Remove a reference or shorten the brief.",needs_pass:"Enter the team passcode to use the prompt engine.",no_key:"The server has no Anthropic API key yet. Add ANTHROPIC_API_KEY in Vercel project settings, then redeploy.",too_large:"The references are too large to send. Remove one or two and try again."}[code];
+  if(code==="needs_pass"){needPass=true;store.set("ndml-pass","")}
+  if(code!=="cancelled"){
+   if(["not_granted","sampling_disabled","not_declared","capability_disabled"].includes(code)){sample=null;setAI(false,"Template mode")}
+   const id=target||ranked()[0].m.id;
+   if(!result[mode]||["not_granted","sampling_disabled"].includes(code)) result[mode]={source:"template",model:id,data:buildLocal(id)};
+   result[mode].error=msg||"Something went wrong reaching Claude. Try again in a moment.";
+  }
+ }finally{ctl=null;setBusy(false);renderRank()}
+}
+function pushHist(){
+ const r=result[S.mode];if(!r)return;
+ const list=S.mode==="video"?VIDEO:IMAGE;const m=list.find(x=>x.id===r.model);
+ hist.unshift({t:Date.now(),mode:S.mode,model:m?m.name:r.model,src:r.source,brief:(S.brief[S.mode]||"").slice(0,240),final:r.data.prompt.final_prompt,neg:r.data.prompt.negative||""});
+ hist=hist.slice(0,15);store.set("ndml-history",hist);renderHist();
+}
+
+/* ---------------- Render: prompt ---------------- */
+function copyBtn(id,label){return `<button class="copy" type="button" data-copy="${id}">${label||"Copy"}</button>`}
+function renderPrompt(){
+ const el=$("#pPrompt");const r=result[S.mode];const v=S.mode==="video";
+ const busyHtml=(busy?`<div class="busy" role="status"><span class="spin"></span><span class="msg" id="busyMsg">${esc(busyMsg)}</span><button class="btn btn-sm btn-ghost" type="button" id="stopBtn">Stop</button></div>`:"")+(needPass&&!busy?`<div class="refine"><input type="password" id="passIn" placeholder="Team passcode" autocomplete="current-password"><button class="btn btn-red btn-sm" type="button" id="passBtn">Unlock &amp; generate</button></div>`:"");
+ if(!r){
+  el.innerHTML=busyHtml+(busy?"":`<div class="empty"><b>No prompt yet</b><span>Write your brief, add references, then press Evaluate &amp; write prompt. Or pick a model in the ranking and press Write prompt.</span><button class="btn btn-red btn-sm" type="button" id="emptyGo">Evaluate &amp; write prompt</button></div>`);
+  bindPrompt();return;
+ }
+ const list=v?VIDEO:IMAGE;const m=list.find(x=>x.id===r.model)||list[0];const p=r.data.prompt||{};const cam=p.camera||{};
+ const tl=Array.isArray(p.timeline)?p.timeline.filter(b=>b&&b.beat):[];
+ const rm=Array.isArray(p.reference_map)?p.reference_map.filter(x=>x&&x.ref):[];
+ el.innerHTML=busyHtml+`
+  ${r.error?`<div class="alert">${esc(r.error)}</div>`:""}
+  <div class="out-head">
+   <div class="t"><div class="eyebrow">${r.source==="ai"?"Written by Claude from your brief and references":"Quick template from your selections"}</div>
+    <h3>Prompt for <b>${esc(m.name)}</b></h3><div class="sub num">${esc(p.settings_line||"")}</div></div>
+   <div style="display:grid;gap:6px;min-width:200px"><label class="lbl" for="retarget">Rewrite for another model</label>
+    <select id="retarget">${list.map(x=>`<option value="${x.id}"${x.id===m.id?" selected":""}>${esc(x.name)}</option>`).join("")}</select></div>
+  </div>
+  <div class="codebox"><div class="cb-h"><span class="eyebrow">Final prompt</span><span class="sp"></span>${copyBtn("final","Copy prompt")}</div><pre id="cp-final">${esc(p.final_prompt||"")}</pre></div>
+  ${p.negative?`<div class="codebox"><div class="cb-h"><span class="eyebrow">Negative prompt</span><span class="sp"></span>${copyBtn("neg")}</div><pre id="cp-neg">${esc(p.negative)}</pre></div>`:""}
+  <div class="refine"><input type="text" id="refineIn" placeholder="Refine it: e.g. make it dusk, add a drone reveal at the end, more candid"><button class="btn btn-ink btn-sm" type="button" id="refineBtn">Refine</button></div>
+  ${r.data.reference_read?`<div><div class="eyebrow" style="margin-bottom:6px">What the references show</div><div style="font-size:14px">${esc(r.data.reference_read)}</div></div>`:""}
+  <div class="bd">
+   <div><div class="k">Camera</div><dl class="cam">${[["Shot",cam.shot],["Angle",cam.angle],["Lens",cam.lens],v?["Move",cam.movement]:null,["Height",cam.height]].filter(x=>x&&x[1]).map(x=>`<dt>${x[0]}</dt><dd>${esc(x[1])}</dd>`).join("")}</dl></div>
+   <div><div class="k">Lighting</div><div class="v">${esc(p.lighting)}</div></div>
+   <div><div class="k">Composition</div><div class="v">${esc(p.composition)}</div></div>
+   <div><div class="k">Colour grade</div><div class="v">${esc(p.color_grade)}</div></div>
+   <div><div class="k">Subject${v?" & action":""}</div><div class="v">${esc(p.subject)}${p.action?` ${esc(p.action)}`:""}</div></div>
+   <div><div class="k">Environment</div><div class="v">${esc(p.environment)}</div></div>
+   <div class="${v&&p.audio?"":"full"}"><div class="k">Texture & realism</div><div class="v">${esc(p.texture_realism)}</div></div>
+   ${v&&p.audio?`<div><div class="k">Audio</div><div class="v">${esc(p.audio)}</div></div>`:""}
+  </div>
+  ${tl.length?`<div><div class="eyebrow" style="margin-bottom:6px">Timeline</div><div class="timeline">${tl.map(b=>`<div class="beat"><div class="tc num">${esc(b.t)}</div><div class="tx">${esc(b.beat)}</div></div>`).join("")}</div></div>`:""}
+  ${rm.length?`<div><div class="eyebrow" style="margin-bottom:6px">Reference map · upload in this order</div><div style="overflow-x:auto"><table class="refmap"><tbody>${rm.map(x=>`<tr><td>${esc(x.ref)}</td><td>${esc(x.use)}</td></tr>`).join("")}</tbody></table></div></div>`:""}
+  ${Array.isArray(r.data.tips)&&r.data.tips.length?`<div><div class="eyebrow" style="margin-bottom:6px">Running it on ${esc(m.name)}</div><ul class="tips">${r.data.tips.map(t=>`<li>${esc(t)}</li>`).join("")}</ul></div>`:""}
+  <div class="actions"><button class="btn btn-ghost btn-sm" type="button" id="regenBtn">${r.source==="ai"?"Regenerate":"Upgrade with Claude"}</button><button class="btn btn-ghost btn-sm" type="button" id="toRank">Back to ranking</button></div>`;
+ bindPrompt();
+}
+function bindPrompt(){
+ const g=id=>document.getElementById(id);
+ if(g("stopBtn"))g("stopBtn").onclick=()=>{if(ctl)ctl.abort()};
+ if(g("passBtn")){const go=()=>{const v=g("passIn").value.trim();if(!v)return;store.set("ndml-pass",v);needPass=false;const lc=lastCall||[];generate(lc[0],lc[1])};g("passBtn").onclick=go;g("passIn").onkeydown=e=>{if(e.key==="Enter")go()};g("passIn").focus()}
+ if(g("emptyGo"))g("emptyGo").onclick=()=>generate();
+ if(g("retarget"))g("retarget").onchange=e=>generate(e.target.value);
+ if(g("regenBtn"))g("regenBtn").onclick=()=>generate(result[S.mode]?result[S.mode].model:null);
+ if(g("toRank"))g("toRank").onclick=()=>showTab("rank");
+ if(g("refineBtn")){const go=()=>{const t=g("refineIn").value.trim();if(!t)return;if(!sample){result[S.mode].error="Refining needs Claude. Allow it for this page to refine prompts.";renderPrompt();return}generate(null,t)};g("refineBtn").onclick=go;g("refineIn").onkeydown=e=>{if(e.key==="Enter")go()}}
+}
+document.addEventListener("click",async e=>{
+ const b=e.target.closest("[data-copy]");if(!b)return;
+ const id=b.dataset.copy;let txt="";
+ if(id==="final"||id==="neg")txt=(document.getElementById("cp-"+id)||{}).textContent||"";
+ else if(id.startsWith("h")){const h=hist[+id.slice(1)];txt=h?h.final:""}
+ try{await navigator.clipboard.writeText(txt);b.textContent="Copied";b.classList.add("done");setTimeout(()=>{b.textContent=id==="final"?"Copy prompt":"Copy";b.classList.remove("done")},1600)}
+ catch(err){const pre=id.startsWith("h")?null:document.getElementById("cp-"+id);if(pre){const rg=document.createRange();rg.selectNodeContents(pre);const s=getSelection();s.removeAllRanges();s.addRange(rg)}b.textContent="Press Ctrl/Cmd+C"}
+});
+
+/* ---------------- History ---------------- */
+function renderHist(){
+ $("#histCount").textContent=hist.length||"";
+ const el=$("#pHist");
+ if(!hist.length){el.innerHTML=`<div class="empty"><b>No prompts saved yet</b><span>Every prompt you generate lands here, on this browser only, so you can copy it again later.</span></div>`;return}
+ el.innerHTML=`<div class="row" style="justify-content:space-between"><span class="note">Last ${hist.length} prompts on this browser</span><button class="linkbtn" type="button" id="clrHist">Clear history</button></div><div class="hist">${hist.map((h,i)=>`
+  <div class="hrow"><div class="top"><span class="spec">${h.mode==="video"?"Video":"Image"}</span><b>${esc(h.model)}</b><span class="note">${new Date(h.t).toLocaleString([], {day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}${h.src==="template"?" · template":""}</span><span class="sp"></span>${copyBtn("h"+i,"Copy prompt")}</div><p>${esc(h.brief)}</p></div>`).join("")}</div>`;
+ const c=document.getElementById("clrHist");if(c)c.onclick=()=>{if(c.dataset.arm){hist=[];store.set("ndml-history",hist);renderHist()}else{c.dataset.arm="1";c.textContent="Click again to clear"}};
+}
+
+/* ---------------- Tabs, mode, brief ---------------- */
+function showTab(t){tab=t;[["rank","#pRank","#tabRank"],["prompt","#pPrompt","#tabPrompt"],["hist","#pHist","#tabHist"]].forEach(([k,p,b])=>{$(p).hidden=k!==t;$(b).setAttribute("aria-selected",k===t)})}
+document.querySelectorAll(".tab").forEach(b=>b.addEventListener("click",()=>showTab(b.dataset.tab)));
+function setMode(m){
+ if(busy&&ctl)ctl.abort();
+ S.mode=m;save();
+ document.querySelectorAll(".mode").forEach(b=>b.setAttribute("aria-selected",b.dataset.mode===m));
+ $("#tplBtn").textContent="Quick template";
+ renderBrief();renderSettings();renderDir();renderRefs();renderRank();renderPrompt();
+}
+document.querySelectorAll(".mode").forEach(b=>b.addEventListener("click",()=>setMode(b.dataset.mode)));
+function renderBrief(){
+ const ta=$("#brief");ta.value=S.brief[S.mode]||"";
+ ta.placeholder=S.mode==="video"?"Describe the shot or sequence: who, what happens, where, the feel, and where it will run (reel, YouTube, site hero).":"Describe the image: subject, setting, mood, and where it runs (Meta ad, brochure page, hoarding). Mention any text that must appear.";
+ $("#exPill").hidden=!S.isEx[S.mode];$("#briefCount").textContent=ta.value.length.toLocaleString();
+}
+let briefT=null;
+$("#brief").addEventListener("input",e=>{S.brief[S.mode]=e.target.value;S.isEx[S.mode]=false;$("#exPill").hidden=true;$("#briefCount").textContent=e.target.value.length.toLocaleString();save();clearTimeout(briefT);briefT=setTimeout(renderRank,250)});
+$("#clearBrief").addEventListener("click",()=>{S.brief[S.mode]="";S.isEx[S.mode]=false;save();renderBrief();renderRank();$("#brief").focus()});
+$("#resetBtn").addEventListener("click",()=>{const d=DEFAULTS();d.mode=S.mode;S=Object.assign(d,{refs:[]});result={video:null,image:null};save();setMode(S.mode)});
+$("#goBtn").addEventListener("click",()=>generate());
+$("#tplBtn").addEventListener("click",()=>{const id=ranked()[0].m.id;result[S.mode]={source:"template",model:id,data:buildLocal(id)};pushHist();showTab("prompt");renderRank();renderPrompt()});
+
+function setAI(on,text){$("#aiDot").className="dot "+(on?"on":"off");$("#aiText").textContent=text;$("#goNote").textContent=on?"Uses Claude on your own account to read the references and write the prompt. Quick template builds one instantly from your selections, without reading references.":"Claude isn't connected in this view, so Evaluate builds a quick template from your selections. Open the page in Claude to get reference-aware prompts."}
+
+/* ---------------- Boot ---------------- */
+$("#statV").textContent=VIDEO.length;$("#statI").textContent=IMAGE.length;
+setMode(S.mode);renderHist();
+(async()=>{
+ try{
+  const c=window.claude;
+  sample=c&&c.use?await c.use("sample"):null;
+  if(sample){try{limits=await sample.limits()}catch(e){limits=null}
+   setAI(true,limits&&limits.images?"Prompt engine ready · reads references":"Prompt engine ready · text only");return}
+ }catch(e){sample=null}
+ try{
+  const r=await fetch("/api/generate",{method:"GET",headers:{"x-nd-pass":store.get("ndml-pass","")}});
+  const j=await r.json();
+  if(r.ok&&j&&j.ok){apiMode=true;setAI(true,"Prompt engine ready · reads references");
+   $("#goNote").textContent="Sends your brief and references to Claude through Nine Degree's server and writes the prompt. Quick template builds one instantly from your selections, without reading references.";return}
+  if(j&&j.code==="no_key"){setAI(false,"Template mode · API key missing");return}
+ }catch(e){}
+ setAI(false,"Template mode");
+})();
+})();
+</script>
+
+</body>
+</html>
